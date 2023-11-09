@@ -1,0 +1,90 @@
+#include <p18F4550.inc>
+
+CONFIG WDT=OFF ; disable watchdog timer
+CONFIG MCLRE = ON ; MCLEAR Pin on 
+CONFIG DEBUG = OFF ; Disable Debug Mode 
+CONFIG FOSC = HS ; oscillator mode 
+
+TEMP_ADDR EQU 0x20 ; Adresse mémoire pour la variable temporaire
+TEMP_REG EQU 0x21 ; Adresse mémoire pour la variable temporaire
+
+; Point d'entrée principal
+ORG 0x0000
+GOTO prog_init
+
+; Routine d'interruption
+ORG 0x0018
+GOTO irq_handle
+
+; Gestion des interruptions
+irq_handle
+    btfsc PIR1, ADIF ; is it AD? 
+    goto AD_interrupt ; yes
+    retfie ; no, return f.i.
+
+AD_interrupt
+    bcf PIR1, ADIF ; clear the flag
+    movf ADRESH, W ; Lire le résultat de la conversion A/N
+    movwf TEMP_REG ; Sauvegarde la donnée A/D dans une variable temporaire
+    movf PORTD, W ; Sauvegarde la valeur actuelle de PORTD dans W
+    andlw B'11000000' ; Applique un masque pour conserver seulement les bits nécessaires pour l'affichage
+    iorwf TEMP_REG, W ; ORe les bits nécessaires pour l'affichage avec les nouveaux résultats de la conversion A/D
+    movwf PORTD ; Restaure la valeur de PORTD
+    retfie
+
+; Début de l'initialisation
+prog_init
+    ; Configuration du module de conversion A/N
+    movlw B'00001110' 
+    movwf ADCON1
+
+    MOVLW B'00000000' ; Configuration pour AN0 (RA0) et autres options
+    MOVWF ADCON0
+
+    ; Activation du module de conversion A/N
+    BSF ADCON0, ADON ; Activer le module A/N
+
+    clrf TRISD
+    clrf PORTD
+
+    ; Activation des interruptions
+    BSF INTCON, GIE ; Activer les interruptions générales
+    BSF PIE1, ADIE ; Activer l'interruption de conversion A/D
+    bsf INTCON, PEIE
+
+start_AD
+; start the A/D conversion 
+    bsf ADCON0, GO_DONE 
+    goto start_AD
+        
+start_display
+    movlw B'10111111'; "0" en binaire pour l'affichage
+    movwf TEMP_ADDR ; Sauvegarde la valeur actuelle de PORTD dans une variable temporaire
+    movf PORTD, W ; Charge la valeur actuelle de PORTD dans W
+    andlw B'00111111' ; Applique un masque pour conserver seulement les bits non utilisés pour l'affichage
+    iorwf TEMP_ADDR, W ; ORe les bits non utilisés pour l'affichage avec la nouvelle valeur pour l'affichage
+    movwf PORTD ; Restaure la valeur de PORTD
+    bsf PORTA, 3 ; Activation DIS0
+    call Delay ; Appel de la fonction de délai
+    bcf PORTA, 3 ; Desactivation DIS0
+
+    movlw B'1101101'; "5" en binaire pour l'affichage
+    movwf TEMP_ADDR ; Sauvegarde la valeur actuelle de PORTD dans une variable temporaire
+    movf PORTD, W ; Charge la valeur actuelle de PORTD dans W
+    andlw B'00111111' ; Applique un masque pour conserver seulement les bits non utilisés pour l'affichage
+    iorwf TEMP_ADDR, W ; ORe les bits non utilisés pour l'affichage avec la nouvelle valeur pour l'affichage
+    movwf PORTD ; Restaure la valeur de PORTD
+    bsf PORTA, 2 ; Activation DIS1
+    call Delay ; Appel de la fonction de délai
+    bcf PORTA, 2 ; Desactivation DIS1
+
+    goto start_display ; Boucle infinie
+
+Delay
+    movlw D'50' ; delay de 50 microsecondes
+    
+delay_loop
+    decfsz WREG, 1 ; Décrémenter WREG et sauter à l'instruction suivante si zéro
+    goto delay_loop ; Répéter la boucle si WREG n'est pas zéro
+    return ; Retourner de la fonction de délai
+end
