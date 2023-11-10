@@ -14,7 +14,15 @@
 
 uint16_t valor;
 float voltaje;
-char datos[20];
+char datos[1026];
+
+uint16_t po;
+float poto;
+char potv[20];
+
+uint16_t tmp;
+float tp;
+char temp[20];
 
 void ADC_init(void) {
     ADCON1bits.PCFG = 0; // Tous les ports analogiques
@@ -27,6 +35,7 @@ void ADC_init(void) {
 
 unsigned int ADC_read(unsigned char ch) {
     if (ch > 13) return 0;
+   
     ADCON0 = 0;
     ADCON0 = (ch << 2);
     ADCON0bits.ADON = 1;
@@ -49,28 +58,59 @@ void main() {
     TRISA = 1; // PORTA -> Entrée
 
     // Coordonnées pour afficher la courbe
-    int x = 0;
+    int x = 3;
     int y;
-
+ 
     while (1) {
+        //drawRectangle(1, 1, 1, 100, GLCD_ON);
+        po = ADC_read(1);
+        poto = ((float) po * 5.0) / 1023;
+        sprintf(potv, "%.2f", poto);
+        glcd_SetCursor(96, 7);
+        glcd_WriteString(potv, f8X8, GLCD_ON);
+
+        tmp = ADC_read(12);
+        tp = ((float) tmp * 5.0) / 1023;
+        sprintf(temp, "%.2f", tp);
+        glcd_SetCursor(96, 1);
+        glcd_WriteString(temp, f8X8, GLCD_ON);
+
+
+
         valor = ADC_read(0);
-        voltaje = ((float)valor * 5.0) / 1023;
+        if (tp > 1) {
+            __delay_ms(100);
+            if (tp > 2) {
+                __delay_ms(50);
+                if (tp > 3) {
+                    __delay_ms(25);
+                    if (tp > 4) {
+                        __delay_ms(12.5);
+                        if (tp > 5) 
+                            __delay_us(0.5);
+                        }
+                    }
+                }
+            }
+        
+ 
+        voltaje = (((float) valor * 5.0) / 1023);
         sprintf(datos, "%.2f", voltaje);
         glcd_SetCursor(96, 1);
         glcd_WriteString(datos, f8X8, GLCD_ON);
 
         // Inverser la courbe en utilisant (32 - y) pour inverser les coordonnées y
-        y = 32 - (int)((voltaje / 5.0) * 32); // Ajustez la valeur pour un meilleur affichage
+        y = 60 - (int) (((voltaje / 6)) * (70 / (1 + poto*3))); // Ajustez la valeur pour un meilleur affichage
 
         glcd_PlotPixel(x, y, GLCD_ON);
-
         x++; // Augmentez la position x pour la prochaine valeur
         if (x >= 128) {
+            
             x = 0; // Réinitialisez x pour afficher la courbe en boucle
             glcd_FillScreen(0); // Effacez l'écran pour recommencer la courbe
-            __delay_ms(500);
         }
-
-        
+       
     }
-}
+
+    }
+
