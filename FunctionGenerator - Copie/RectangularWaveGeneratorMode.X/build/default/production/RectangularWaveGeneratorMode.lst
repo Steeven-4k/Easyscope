@@ -1,0 +1,1728 @@
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 #include <p18F4550.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ; Build date : Jan 06 2020
+                      00005 ;  MPASM PIC18F4550 processor include
+                      00006 ; 
+                      00007 ;  (c) Copyright 1999-2020 Microchip Technology, All rights reserved
+                      00008 ;==========================================================================
+                      00009 
+                      01765         LIST
+                      00002 
+                      00003 ; Config lines for interrupts        
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00004 CONFIG WDT = OFF                        ; disable watchdog timer 
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00005 CONFIG MCLRE = ON                       ; MCLEAR Pin On
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00006 CONFIG DEBUG = OFF                      ; Disable Debug Mode
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00007 CONFIG FOSC = HS                        ; Oscillator Mode 
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00008 CONFIG CPUDIV = OSC1_PLL2
+Warning[205]: Found directive in column 1. (CONFIG)
+                      00009 CONFIG PBADEN = OFF
+                      00010     
+                      00011 ; Declaration of constants 
+  00000010            00012 FREQ_MIN equ 10
+  00001000            00013 FREQ_MAX equ 1000
+  08000000            00014 FREQ_SYS equ 8000000
+                      00015 ; Declaration of variables
+  00000019            00016 FREQUENCY_POTENTIOMETER equ 0x19
+                      00017 ; Raw digits to be displayed
+  00000020            00018 FREQUENCY_POTENTIOMETER_0 equ 0x20
+  00000021            00019 FREQUENCY_POTENTIOMETER_1 equ 0x21
+  00000022            00020 FREQUENCY_POTENTIOMETER_2 equ 0x22
+  00000023            00021 FREQUENCY_POTENTIOMETER_3 equ 0x23
+                      00022 ; Temporary used by the decode routine
+  00000024            00023 FREQUENCY_TEMPORARY equ 0x24
+                      00024 ; Final digits ready to be displayed
+  00000025            00025 FREQUENCY_DISPLAY_0 equ 0x25
+  00000026            00026 FREQUENCY_DISPLAY_1 equ 0x26 
+  00000027            00027 FREQUENCY_DISPLAY_2 equ 0x27 
+  00000028            00028 FREQUENCY_DISPLAY_3 equ 0x28
+  00000029            00029 duty_cycle equ 0x29
+  00000030            00030 led0_state equ 0x30
+  00000031            00031 led1_state equ 0x31 
+  00000032            00032 led2_state equ 0x32 
+  00000033            00033 led3_state equ 0x33 
+  00000034            00034 led4_state equ 0x34 
+  00000035            00035 led5_state equ 0x35 
+  00000036            00036 led6_state equ 0x36 
+  00000037            00037 led7_state equ 0x37  
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00038  
+  000000FF            00039 count1 equ H'FF'                        ; Counter for DisplayDelay    
+                      00040  
+Warning[205]: Found directive in column 1. (org)
+                      00041 org 0x0000                              ; Reset vector
+000000 EF?? F???      00042     GOTO INIT
+Warning[205]: Found directive in column 1. (org)
+                      00043 org 0x0008                              ; ADC interrupt vector 
+000008 EF?? F???      00044     GOTO ADCInterrupt
+                      00045     
+00000C                00046 INIT
+00000C EC?? F???      00047     CALL PortsInit
+000010 EC?? F???      00048     CALL ADInit
+000014 EC?? F???      00049     CALL InterruptsInit
+000018 EC?? F???      00050     CALL PWMInit
+00001C EF?? F???      00051     GOTO MAIN_LOOP
+                      00052   
+                      00053     
+                      00054     
+                      00055 ; Main function    
+000020                00056 MAIN_LOOP
+                      00057 ; Display Frequency from the potentiometer on the 7SEG
+000020 EC?? F???      00058     CALL ReadPotentiometer
+000024 EC?? F???      00059     CALL ExtractDigits
+000028 EC?? F???      00060     CALL ConvertToBCD
+00002C EC?? F???      00061     CALL DisplayFrequency
+                      00062 ; Create a PWM and change duty cycle with buttons
+                      00063     ; Change the duty cycle by pressing buttons and activate LEDs 
+000030 EC?? F???      00064     CALL ReadButtons
+                      00065 
+000034 EF?? F???      00066     GOTO MAIN_LOOP
+                      00067     
+                      00068     
+                      00069 ; Initialisation of the ports    
+000038                00070 PortsInit
+                      00071     ; Initialisation of PORTA (for the 7SEG)
+000038 0EF0           00072     movlw B'11110000'                   ; Set RA0, RA1, RA2, RA3 as digital outputs and RA5 as analog In
+                            put
+00003A 6E92           00073     movwf TRISA
+                      00074     ; Initalisation of PORTB (for the buttons)
+00003C 6893           00075     setf TRISB                          
+00003E 6A81           00076     clrf PORTB                          
+                      00077     ; initialiaation of PORTD (for the 7SEG)
+000040 6A95           00078     clrf TRISD                          ; PORTD is an OUTPUT 
+000042 6A83           00079     clrf PORTD                          ; Clear PORTD
+Warning[203]: Found opcode in column 1. (RETURN)
+000044 0012           00080 RETURN
+                      00081  
+                      00082 ; Initialisation of the A/D Module
+000046                00083 ADInit 
+                      00084     ; Change the ADCON1 register in digital I/O because it is analog input by default (for 7SEG)
+000046 0E0A           00085     movlw B'00001010'                   ; Set RA5 as Analog I/O
+000048 6EC1           00086     movwf ADCON1
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00087     ; initialization of the A/D module
+00004A 0E10           00088     movlw B'00010000'                   ; Set Channel 5 -> AN4
+00004C 6EC2           00089     movwf ADCON0 
+                      00090     ; power up the A/D module 
+00004E 80C2           00091     bsf ADCON0, ADON
+Warning[203]: Found opcode in column 1. (RETURN)
+000050 0012           00092 RETURN
+                      00093  
+                      00094 ; Initialisation of interrupts    
+000052                00095 InterruptsInit
+                      00096     ; Configure interrupts 
+000052 8EF2           00097     bsf INTCON, GIE                     ; interrupts
+000054 8CF2           00098     bsf INTCON, PEIE                    ; Periph. Int.
+000056 8C9D           00099     bsf PIE1, ADIE                      ; active l'interruption ADC
+Warning[203]: Found opcode in column 1. (RETURN)
+000058 0012           00100 RETURN 
+                      00101    
+                      00102 ; Initialisation of the PWM    
+00005A                00103 PWMInit
+                      00104     ; Configuration du module CCP en mode PWM
+00005A 8AD8           00105     bsf STATUS, 5 ; Set RP0 and go to Bank 1
+00005C 0E3C           00106     movlw B'00111100' ; Configure le CCP1 comme sortie PWM
+00005E 6EBD           00107     movwf CCP1CON
+000060 9AD8           00108     bcf STATUS, 5 ; Clear RP0 and return to Bank 0
+                      00109     
+                      00110     ; Configuration du timer2 pour le PWM
+000062 0E05           00111     movlw B'00000101' ; Prescaler à 4 et postscaler à 1 pour le Timer2
+000064 6ECA           00112     movwf T2CON
+                      00113     
+                      00114     ; Charge initiale de PR2 pour ajuster la fréquence du PWM
+Warning[202]: Argument out of range.  Least significant bits used.
+000066 0EE0           00115     movlw (FREQ_SYS / (4 * FREQUENCY_POTENTIOMETER)) - 1
+000068 6ECB           00116     movwf PR2
+                      00117     
+                      00118     ; Activation du Timer2
+00006A 84CA           00119     bsf T2CON, TMR2ON
+                      00120     
+                      00121     ; Activation de la sortie PWM sur CCP1
+00006C 80BD           00122     bsf CCP1CON, CCP1M0
+00006E 82BD           00123     bsf CCP1CON, CCP1M1 
+Warning[203]: Found opcode in column 1. (RETURN)
+000070 0012           00124 RETURN        
+                      00125  
+                      00126 ; ADC interrupt which gives the potentiometer's frequency    
+000072                00127 ADCInterrupt
+000072 9C9E           00128     bcf PIR1, ADIF                      ; Clear the ADC interrupt flag
+                      00129     ; A/D result goes into FREQUENCY_POTENTIOMETER
+000074 50C4           00130     movf ADRESH, W                      ; Load the high part of the result into WREG
+000076 6E19           00131     movwf FREQUENCY_POTENTIOMETER       ; Stock the value in FREQUENCY_POTENTIOMETER
+000078 EC?? F???      00132     CALL UpdatePWMFrequency
+00007C EC?? F???      00133     CALL LimitFrequency
+Warning[203]: Found opcode in column 1. (RETFIE)
+000080 0010           00134 RETFIE
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00135     
+                      00136 ; Read the value of the potentiometer
+000082                00137 ReadPotentiometer
+                      00138     ; start the A/D conversion
+000082 82C2           00139     bsf ADCON0, GO_DONE
+                      00140     ; Wait for the A/D to complete...
+Warning[207]: Found label after column 1. (WaitLoop)
+000084                00141     WaitLoop
+000084 B2C2           00142         btfsc ADCON0, GO_DONE           ; Check if the conversion is occuring
+000086 EF?? F???      00143     GOTO WaitLoop                       ; If the conversion is not complete, back to the loop
+Warning[203]: Found opcode in column 1. (RETURN)
+00008A 0012           00144 RETURN
+                      00145  
+                      00146 ; Limitate the frequency > 10
+00008C                00147 LimitFrequency
+                      00148     ; Check if FREQUENCY_POTENTIOMETER is below FREQ_MIN    
+00008C 0E10           00149     movlw FREQ_MIN                      ; Load the min value in WREG
+00008E 5C19           00150     subwf FREQUENCY_POTENTIOMETER, W    ; Substract FREQUENCY_POTENTIOMETER to FREQ_MIN and stock the re
+                            sult in WREG
+000090 A4D8           00151     btfss STATUS, Z                     ; Check if result is 0
+000092 EF?? F???      00152     GOTO FrequencyInRange               ; If the result is positive, FREQUENCY_POTENTIOMETER is in the r
+                            ange
+                      00153     
+                      00154     ; If below FREQ_MIN, set FREQUENCY_POTENTIOMETER to FREQ_MIN
+000096 0E10           00155     movlw FREQ_MIN          
+000098 6E19           00156     movwf FREQUENCY_POTENTIOMETER          
+Warning[203]: Found opcode in column 1. (RETURN)
+00009A 0012           00157 RETURN  
+                      00158  
+                      00159 ; Limitate the frequency < 1000        
+00009C                00160 FrequencyInRange
+                      00161     ; Check if FREQUENCY_POTENTIOMETER is above FREQ_MAX
+Warning[202]: Argument out of range.  Least significant bits used.
+00009C 0E00           00162     movlw FREQ_MAX                      ; Load the max value in WREG
+00009E 5C19           00163     subwf FREQUENCY_POTENTIOMETER, W    ; Substract FREQUENCY_POTENTIOMETER to FREQ_MAX and stock the re
+                            sult in WREG
+0000A0 B4D8           00164     btfsc STATUS, Z                     ; Check the carry flag
+0000A2 EF?? F???      00165     GOTO Done
+                      00166     
+                      00167     ; If above FREQ_MAX, set FREQUENCY_POTENTIOMETER to FREQ_MAX
+Warning[202]: Argument out of range.  Least significant bits used.
+0000A6 0E00           00168     movlw FREQ_MAX                      
+0000A8 6E19           00169     movwf FREQUENCY_POTENTIOMETER
+0000AA EF?? F???      00170     GOTO Done
+                      00171  
+0000AE                00172 Done 
+0000AE 0012           00173     RETURN        
+                      00174    
+                      00175 ; Extract each digit composing the potentiometer's frequency    
+0000B0                00176 ExtractDigits
+                      00177     ; Division par 10 pour extraire les chiffres
+0000B0 0E10           00178     movlw 10
+0000B2 6E23           00179     movwf FREQUENCY_POTENTIOMETER_3     ; Initialisation du quotient
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0000B4 0E00           00180     movlw 0    
+0000B6 6E22           00181     movwf FREQUENCY_POTENTIOMETER_2     ; Initialisation du reste
+0000B8 6E21           00182     movwf FREQUENCY_POTENTIOMETER_1
+0000BA 6E20           00183     movwf FREQUENCY_POTENTIOMETER_0
+0000BC EF?? F???      00184     GOTO dig_loop
+Warning[203]: Found opcode in column 1. (RETURN)
+0000C0 0012           00185 RETURN    
+                      00186 
+                      00187 ; Division répétée
+                      00188 ; Explication : FREQUENCY_POTENTIOMETER est divisé par 10, et le reste est stocké dans FREQUENCY_POTENTI
+                            OMETER_0. FREQUENCY_POTENTIOMETER est mis à jour avec le quotient.
+                      00189 ; on recommence l'itération : FREQUENCY_POTENTIOMETER (nouvelle valeur après la première itération) est 
+                            divisé par 10, et le reste est stocké dans FREQUENCY_POTENTIOMETER_1. FREQUENCY_POTENTIOMETER es
+                      00190 ; on continue ainsi de suite jusqu'à ce que la division ne soit plus possible et donc que tous les chiff
+                            res qui composent la fréquence du potentiomètre soient placés dans des variables
+0000C2                00191 dig_loop
+0000C2 5023           00192     movf FREQUENCY_POTENTIOMETER_3, W
+0000C4 5C19           00193     subwf FREQUENCY_POTENTIOMETER, W
+0000C6 A0D8           00194     btfss STATUS, C          ; Si C=0, FREQUENCY_POTENTIOMETER < FREQUENCY_POTENTIOMETER_3
+0000C8 EF?? F???      00195     GOTO dig_end
+0000CC 2A20           00196     incf FREQUENCY_POTENTIOMETER_0, F
+0000CE 5022           00197     movf FREQUENCY_POTENTIOMETER_2, W
+0000D0 5E23           00198     subwf FREQUENCY_POTENTIOMETER_3, F
+0000D2 0E10           00199     movlw 10
+0000D4 6E23           00200     movwf FREQUENCY_POTENTIOMETER_3
+0000D6 5021           00201     movf FREQUENCY_POTENTIOMETER_1, W
+0000D8 5E23           00202     subwf FREQUENCY_POTENTIOMETER_3, F
+0000DA EF?? F???      00203     GOTO dig_loop
+                      00204 
+                      00205 ; No more digit to extract
+0000DE                00206 dig_end
+0000DE 6A23           00207     clrf FREQUENCY_POTENTIOMETER_3  ; Reset FREQUENCY_POTENTIOMETER_3
+0000E0 0012           00208     RETURN
+                      00209     
+                      00210 ; Convert from raw to final digits ready to be displayed
+0000E2                00211 ConvertToBCD
+                      00212     ; Decode FREQUENCY_POTENTIOMETER_0
+0000E2 5020           00213     movf FREQUENCY_POTENTIOMETER_0, 0
+0000E4 6E24           00214     movwf FREQUENCY_TEMPORARY
+0000E6 EC?? F???      00215     CALL decode_digit                   ; Returns with mask in w
+0000EA 6E25           00216     movwf FREQUENCY_DISPLAY_0           ; Stock the value that will be displayed by the 7 SEG
+                      00217      ; Decode FREQUENCY_POTENTIOMETER_1
+0000EC 5021           00218     movf FREQUENCY_POTENTIOMETER_1, 0
+0000EE 6E24           00219     movwf FREQUENCY_TEMPORARY
+0000F0 EC?? F???      00220     CALL decode_digit                   ; Returns with mask in w
+0000F4 6E26           00221     movwf FREQUENCY_DISPLAY_1           ; Stock the value that will be displayed by the 7 SEG
+                      00222      ; Decode FREQUENCY_POTENTIOMETER_2
+0000F6 5022           00223     movf FREQUENCY_POTENTIOMETER_2, 0
+0000F8 6E24           00224     movwf FREQUENCY_TEMPORARY
+0000FA EC?? F???      00225     CALL decode_digit                   ; Returns with mask in w
+0000FE 6E27           00226     movwf FREQUENCY_DISPLAY_2           ; Stock the value that will be displayed by the 7 SEG
+                      00227      ; Decode FREQUENCY_POTENTIOMETER_3
+000100 5023           00228     movf FREQUENCY_POTENTIOMETER_3, 0
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000102 6E24           00229     movwf FREQUENCY_TEMPORARY
+000104 EC?? F???      00230     CALL decode_digit                   ; Returns with mask in w
+000108 6E28           00231     movwf FREQUENCY_DISPLAY_3           ; Stock the value that will be displayed by the 7 SEG
+Warning[203]: Found opcode in column 1. (RETURN)
+00010A 0012           00232 RETURN
+                      00233     
+                      00234 ; Decode the real value of the digit in BCD    
+00010C                00235 decode_digit
+00010C 5224           00236     movf FREQUENCY_TEMPORARY, f
+00010E B4D8           00237     btfsc STATUS, Z
+000110 EF?? F???      00238     GOTO dis_is_0                       ; Z flag affected, it is 0
+000114 2E24           00239     decfsz FREQUENCY_TEMPORARY
+000116 EF?? F???      00240     GOTO dis_mark1                      ; marks to jump
+00011A EF?? F???      00241     GOTO dis_is_1                       ; it is 1   
+                      00242     
+Warning[207]: Found label after column 1. (dis_mark1)
+00011E                00243     dis_mark1
+00011E 2E24           00244         decfsz FREQUENCY_TEMPORARY
+000120 EF?? F???      00245         GOTO dis_mark2
+000124 EF?? F???      00246         GOTO dis_is_2                   ; it is 2
+                      00247 
+Warning[207]: Found label after column 1. (dis_mark2)
+000128                00248     dis_mark2
+000128 2E24           00249         decfsz FREQUENCY_TEMPORARY
+00012A EF?? F???      00250         GOTO dis_mark3
+00012E EF?? F???      00251         GOTO dis_is_3                   ; it is 3
+                      00252 
+Warning[207]: Found label after column 1. (dis_mark3)
+000132                00253     dis_mark3
+000132 2E24           00254         decfsz FREQUENCY_TEMPORARY
+000134 EF?? F???      00255         GOTO dis_mark4
+000138 EF?? F???      00256         GOTO dis_is_4                   ; it is 4
+                      00257 
+Warning[207]: Found label after column 1. (dis_mark4)
+00013C                00258     dis_mark4
+00013C 2E24           00259         decfsz FREQUENCY_TEMPORARY
+00013E EF?? F???      00260         GOTO dis_mark5
+000142 EF?? F???      00261         GOTO dis_is_5                   ; it is 5
+                      00262 
+Warning[207]: Found label after column 1. (dis_mark5)
+000146                00263     dis_mark5
+000146 2E24           00264         decfsz FREQUENCY_TEMPORARY
+000148 EF?? F???      00265         GOTO dis_mark6
+00014C EF?? F???      00266         GOTO dis_is_6                   ; it is 6
+                      00267 
+Warning[207]: Found label after column 1. (dis_mark6)
+000150                00268     dis_mark6
+000150 2E24           00269         decfsz FREQUENCY_TEMPORARY
+000152 EF?? F???      00270         GOTO dis_mark7
+000156 EF?? F???      00271         GOTO dis_is_7                   ; it is 7
+                      00272 
+Warning[207]: Found label after column 1. (dis_mark7)
+00015A                00273     dis_mark7
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00015A 2E24           00274         decfsz FREQUENCY_TEMPORARY
+00015C EF?? F???      00275         GOTO dis_mark8
+000160 EF?? F???      00276         GOTO dis_is_8                   ; it is 8
+                      00277 
+Warning[207]: Found label after column 1. (dis_mark8)
+000164                00278     dis_mark8
+000164 2E24           00279         decfsz FREQUENCY_TEMPORARY
+000166 EF?? F???      00280         GOTO dis_error
+00016A EF?? F???      00281         GOTO dis_is_9                   ; it is 9
+                      00282 
+Warning[207]: Found label after column 1. (dis_error)
+00016E                00283     dis_error                           ; should never arrive here
+00016E EF?? F???      00284         GOTO dis_is_error
+                      00285 
+                      00286     ; Apply mask and continue
+Warning[207]: Found label after column 1. (dis_is_0)
+000172 0C3F           00287     dis_is_0: retlw 0x3F                ; mask for 0
+Warning[207]: Found label after column 1. (dis_is_1)
+000174 0C06           00288     dis_is_1: retlw 0x06                ; mask for 1
+Warning[207]: Found label after column 1. (dis_is_2)
+000176 0C5B           00289     dis_is_2: retlw 0x5B                ; mask for 2
+Warning[207]: Found label after column 1. (dis_is_3)
+000178 0C4F           00290     dis_is_3: retlw 0x4F                ; mask for 3
+Warning[207]: Found label after column 1. (dis_is_4)
+00017A 0C66           00291     dis_is_4: retlw 0x66                ; mask for 4
+Warning[207]: Found label after column 1. (dis_is_5)
+00017C 0C6D           00292     dis_is_5: retlw 0x6D                ; mask for 5
+Warning[207]: Found label after column 1. (dis_is_6)
+00017E 0C7D           00293     dis_is_6: retlw 0x7D                ; mask for 6
+Warning[207]: Found label after column 1. (dis_is_7)
+000180 0C07           00294     dis_is_7: retlw 0x07                ; mask for 7
+Warning[207]: Found label after column 1. (dis_is_8)
+000182 0C7F           00295     dis_is_8: retlw 0x7F                ; mask for 8
+Warning[207]: Found label after column 1. (dis_is_9)
+000184 0C6F           00296     dis_is_9: retlw 0x6F                ; mask for 9
+Warning[207]: Found label after column 1. (dis_is_error)
+000186 0C79           00297     dis_is_error: retlw 0x79            ; mask for E 
+Warning[203]: Found opcode in column 1. (RETURN)
+000188 0012           00298 RETURN
+                      00299 
+                      00300 ; Displays the frequency on the 7SEG  
+00018A                00301 DisplayFrequency
+00018A C025 FF83      00302     movff FREQUENCY_DISPLAY_0, PORTD    ; digit 0 into PORTD
+00018E 8089           00303     bsf LATA, RA0                       ; activate dis0
+000190 EC?? F???      00304     CALL DisplayDelay                   ; wait a little
+000194 9089           00305     bcf LATA, RA0                       ; deactivate dis0
+000196 C026 FF83      00306     movff FREQUENCY_DISPLAY_1, PORTD    ; digit 1 into PORTD
+00019A 8289           00307     bsf LATA, RA1                       ; activate dis1
+00019C EC?? F???      00308     CALL DisplayDelay                   ; wait a little
+0001A0 9289           00309     bcf LATA, RA1                       ; deactivate dis1
+0001A2 C027 FF83      00310     movff FREQUENCY_DISPLAY_2, PORTD    ; digit 2
+0001A6 8489           00311     bsf LATA, RA2
+0001A8 EC?? F???      00312     CALL DisplayDelay
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0001AC 9489           00313     bcf LATA, RA2
+0001AE C028 FF83      00314     movff FREQUENCY_DISPLAY_3, PORTD    ; digit 3
+0001B2 8689           00315     bsf LATA, RA3
+0001B4 EC?? F???      00316     CALL DisplayDelay
+0001B8 9689           00317     bcf LATA, RA3      
+Warning[203]: Found opcode in column 1. (RETURN)
+0001BA 0012           00318 RETURN
+                      00319  
+                      00320 ; Short delay to see the display    
+0001BC                00321 DisplayDelay
+                      00322     ; Wait a couple of hundreds of clock cycles
+0001BC 2FFF           00323     decfsz count1
+0001BE EF?? F???      00324     GOTO DisplayDelay
+Warning[203]: Found opcode in column 1. (RETURN)
+0001C2 0012           00325 RETURN       
+                      00326  
+                      00327 ; Detect which button is pressed    
+0001C4                00328 ReadButtons
+0001C4 EC?? F???      00329     CALL TurnOffLEDS
+0001C8 B081           00330     btfsc PORTB, RB0
+0001CA EC?? F???      00331     CALL Button0
+0001CE B281           00332     btfsc PORTB, RB1
+0001D0 EC?? F???      00333     CALL Button1
+0001D4 B481           00334     btfsc PORTB, RB2
+0001D6 EC?? F???      00335     CALL Button2
+0001DA B681           00336     btfsc PORTB, RB3
+0001DC EC?? F???      00337     CALL Button3
+0001E0 B881           00338     btfsc PORTB, RB4
+0001E2 EC?? F???      00339     CALL Button4
+0001E6 BA81           00340     btfsc PORTB, RB5
+0001E8 EC?? F???      00341     CALL Button5
+0001EC BC81           00342     btfsc PORTB, RB6
+0001EE EC?? F???      00343     CALL Button6
+0001F2 BE81           00344     btfsc PORTB, RB7
+0001F4 EC?? F???      00345     CALL Button7
+Warning[203]: Found opcode in column 1. (RETURN)
+0001F8 0012           00346 RETURN
+                      00347         
+                      00348 ; Turn off all the LEDs    
+0001FA                00349 TurnOffLEDS
+0001FA 9081           00350     bcf PORTB, RB0
+0001FC 9281           00351     bcf PORTB, RB1
+0001FE 9481           00352     bcf PORTB, RB2
+000200 9681           00353     bcf PORTB, RB3
+000202 9881           00354     bcf PORTB, RB4
+000204 9A81           00355     bcf PORTB, RB5
+000206 9C81           00356     bcf PORTB, RB6
+000208 9E81           00357     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+00020A 0012           00358 RETURN  
+                      00359 
+                      00360 ; Set duty cycle to 0.1 and activate the LED    
+00020C                00361 Button0
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00362     ; Mise à jour de la valeur duty cycle 
+00020C 0E00           00363     movlw (1/10)
+00020E 6E29           00364     movwf duty_cycle
+000210 EC?? F???      00365     CALL UpdatePWM
+                      00366     ; Allumage de la LED du bouton0
+000214 A030           00367     btfss led0_state, 0
+000216 8081           00368     bsf PORTB, RB0
+                      00369     ; Mise à jour de l'état de la LED
+000218 8030           00370     bsf led0_state, 0
+                      00371     ; Eteindre toutes les autres LED
+00021A 9281           00372     bcf PORTB, RB1
+00021C 9481           00373     bcf PORTB, RB2
+00021E 9681           00374     bcf PORTB, RB3
+000220 9881           00375     bcf PORTB, RB4
+000222 9A81           00376     bcf PORTB, RB5
+000224 9C81           00377     bcf PORTB, RB6
+000226 9E81           00378     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+000228 0012           00379 RETURN
+                      00380 
+                      00381 ; Set duty cycle to 0.2 and activate the LED      
+00022A                00382 Button1
+                      00383     ; Mise à jour de la valeur duty cycle 
+00022A 0E00           00384     movlw (2/10)
+00022C 6E29           00385     movwf duty_cycle
+00022E EC?? F???      00386     CALL UpdatePWM
+                      00387     ; Allumage de la LED du bouton1
+000232 A031           00388     btfss led1_state, 0
+000234 8281           00389     bsf PORTB, RB1
+                      00390     ; Mise à jour de l'état de la LED
+000236 8031           00391     bsf led1_state, 0
+                      00392     ; Eteindre toutes les autres LED
+000238 9081           00393     bcf PORTB, RB0
+00023A 9481           00394     bcf PORTB, RB2
+00023C 9681           00395     bcf PORTB, RB3
+00023E 9881           00396     bcf PORTB, RB4
+000240 9A81           00397     bcf PORTB, RB5
+000242 9C81           00398     bcf PORTB, RB6
+000244 9E81           00399     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+000246 0012           00400 RETURN   
+                      00401   
+                      00402 ; Set duty cycle to 0.3 and activate the LED      
+000248                00403 Button2
+                      00404     ; Mise à jour de la valeur duty cycle 
+000248 0E00           00405     movlw (3/10)
+00024A 6E29           00406     movwf duty_cycle
+00024C EC?? F???      00407     CALL UpdatePWM
+                      00408     ; Allumage de la LED du bouton2
+000250 A032           00409     btfss led2_state, 0
+000252 8481           00410     bsf PORTB, RB2
+                      00411     ; Mise à jour de l'état de la LED
+000254 8032           00412     bsf led2_state, 0
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00413     ; Eteindre toutes les autres LED
+000256 9081           00414     bcf PORTB, RB0
+000258 9281           00415     bcf PORTB, RB1
+00025A 9681           00416     bcf PORTB, RB3
+00025C 9881           00417     bcf PORTB, RB4
+00025E 9A81           00418     bcf PORTB, RB5
+000260 9C81           00419     bcf PORTB, RB6
+000262 9E81           00420     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+000264 0012           00421 RETURN
+                      00422 
+                      00423 ; Set duty cycle to 0.4 and activate the LED      
+000266                00424 Button3
+                      00425     ; Mise à jour de la valeur duty cycle 
+000266 0E00           00426     movlw (4/10)
+000268 6E29           00427     movwf duty_cycle
+00026A EC?? F???      00428     CALL UpdatePWM
+                      00429     ; Allumage de la LED du bouton3
+00026E A033           00430     btfss led3_state, 0
+000270 8681           00431     bsf PORTB, RB3
+                      00432     ; Mise à jour de l'état de la LED
+000272 8033           00433     bsf led3_state, 0
+                      00434     ; Eteindre toutes les autres LED
+000274 9081           00435     bcf PORTB, RB0
+000276 9281           00436     bcf PORTB, RB1
+000278 9481           00437     bcf PORTB, RB2
+00027A 9881           00438     bcf PORTB, RB4
+00027C 9A81           00439     bcf PORTB, RB5
+00027E 9C81           00440     bcf PORTB, RB6
+000280 9E81           00441     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+000282 0012           00442 RETURN
+                      00443 
+                      00444 ; Set duty cycle to 0.5 and activate the LED      
+000284                00445 Button4
+                      00446     ; Mise à jour de la valeur duty cycle 
+000284 0E00           00447     movlw (5/10)
+000286 6E29           00448     movwf duty_cycle
+000288 EC?? F???      00449     CALL UpdatePWM
+                      00450     ; Allumage de la LED du bouton4
+00028C A034           00451     btfss led4_state, 0
+00028E 8881           00452     bsf PORTB, RB4
+                      00453     ; Mise à jour de l'état de la LED
+000290 8034           00454     bsf led4_state, 0
+                      00455     ; Eteindre toutes les autres LED
+000292 9081           00456     bcf PORTB, RB0
+000294 9281           00457     bcf PORTB, RB1
+000296 9481           00458     bcf PORTB, RB2
+000298 9681           00459     bcf PORTB, RB3
+00029A 9A81           00460     bcf PORTB, RB5
+00029C 9C81           00461     bcf PORTB, RB6
+00029E 9E81           00462     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0002A0 0012           00463 RETURN
+                      00464  
+                      00465 ; Set duty cycle to 0.6 and activate the LED      
+0002A2                00466 Button5
+                      00467     ; Mise à jour de la valeur duty cycle 
+0002A2 0E00           00468     movlw (6/10)
+0002A4 6E29           00469     movwf duty_cycle
+0002A6 EC?? F???      00470     CALL UpdatePWM
+                      00471     ; Allumage de la LED du bouton5
+0002AA A035           00472     btfss led5_state, 0
+0002AC 8A81           00473     bsf PORTB, RB5
+                      00474     ; Mise à jour de l'état de la LED
+0002AE 8035           00475     bsf led5_state, 0
+                      00476     ; Eteindre toutes les autres LED
+0002B0 9081           00477     bcf PORTB, RB0
+0002B2 9281           00478     bcf PORTB, RB1
+0002B4 9481           00479     bcf PORTB, RB2
+0002B6 9681           00480     bcf PORTB, RB3
+0002B8 9881           00481     bcf PORTB, RB4
+0002BA 9C81           00482     bcf PORTB, RB6
+0002BC 9E81           00483     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+0002BE 0012           00484 RETURN
+                      00485  
+                      00486 ; Set duty cycle to 0.7 and activate the LED      
+0002C0                00487 Button6
+                      00488     ; Mise à jour de la valeur duty cycle 
+0002C0 0E00           00489     movlw (7/10)
+0002C2 6E29           00490     movwf duty_cycle
+0002C4 EC?? F???      00491     CALL UpdatePWM
+                      00492     ; Allumage de la LED du bouton6
+0002C8 A036           00493     btfss led6_state, 0
+0002CA 8C81           00494     bsf PORTB, RB6
+                      00495     ; Mise à jour de l'état de la LED
+0002CC 8036           00496     bsf led6_state, 0
+                      00497     ; Eteindre toutes les autres LED
+0002CE 9081           00498     bcf PORTB, RB0
+0002D0 9281           00499     bcf PORTB, RB1
+0002D2 9481           00500     bcf PORTB, RB2
+0002D4 9681           00501     bcf PORTB, RB3
+0002D6 9881           00502     bcf PORTB, RB4
+0002D8 9A81           00503     bcf PORTB, RB5
+0002DA 9E81           00504     bcf PORTB, RB7
+Warning[203]: Found opcode in column 1. (RETURN)
+0002DC 0012           00505 RETURN
+                      00506   
+                      00507 ; Set duty cycle to 0.8 and activate the LED      
+0002DE                00508 Button7
+                      00509     ; Mise à jour de la valeur duty cycle 
+0002DE 0E00           00510     movlw (8/10)
+0002E0 6E29           00511     movwf duty_cycle
+0002E2 EC?? F???      00512     CALL UpdatePWM
+                      00513     ; Allumage de la LED du bouton7
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0002E6 A037           00514     btfss led7_state, 0
+0002E8 8E81           00515     bsf PORTB, RB7
+                      00516     ; Mise à jour de l'état de la LED
+0002EA 8037           00517     bsf led7_state, 0
+                      00518     ; Eteindre toutes les autres LED
+0002EC 9081           00519     bcf PORTB, RB0
+0002EE 9281           00520     bcf PORTB, RB1
+0002F0 9481           00521     bcf PORTB, RB2
+0002F2 9681           00522     bcf PORTB, RB3
+0002F4 9881           00523     bcf PORTB, RB4
+0002F6 9A81           00524     bcf PORTB, RB5
+0002F8 9C81           00525     bcf PORTB, RB6
+Warning[203]: Found opcode in column 1. (RETURN)
+0002FA 0012           00526 RETURN
+                      00527     
+                      00528 ; Update the PWM according to the duty cycle    
+0002FC                00529 UpdatePWM
+                      00530     ; Load the value of duty cycle in CCPR1L
+0002FC 5029           00531     movf duty_cycle, W
+0002FE 6EBE           00532     movwf CCPR1L
+Warning[203]: Found opcode in column 1. (RETURN)
+000300 0012           00533 RETURN    
+                      00534    
+                      00535 ; Update the PWM according to the potentiometer's frequency    
+000302                00536 UpdatePWMFrequency
+                      00537     ; Recalculate PR2 based on the new frequency from the potentiometer
+Warning[202]: Argument out of range.  Least significant bits used.
+000302 0EE0           00538     movlw (FREQ_SYS / (4 * FREQUENCY_POTENTIOMETER)) - 1
+000304 6ECB           00539     movwf PR2
+                      00540     ; Update the PWM frequency
+000306 8AD8           00541     bsf STATUS, 5 ; Set RP0 and go to Bank 1
+000308 50CB           00542     movf PR2, W
+00030A 6ECA           00543     movwf T2CON
+00030C 9AD8           00544     bcf STATUS, 5 ; Clear RP0 and return to Bank 0
+Warning[203]: Found opcode in column 1. (RETURN)
+00030E 0012           00545 RETURN    
+                      00546     
+                      00547     
+Warning[205]: Found directive in column 1. (END)
+                      00548 END    
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ACTVIE                            00000002
+ACTVIF                            00000002
+ADCInterrupt                      00000072
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADDEN                             00000003
+ADDR0                             00000000
+ADDR1                             00000001
+ADDR2                             00000002
+ADDR3                             00000003
+ADDR4                             00000004
+ADDR5                             00000005
+ADDR6                             00000006
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADInit                            00000046
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AN0                               00000000
+AN1                               00000001
+AN2                               00000002
+AN3                               00000003
+AN4                               00000005
+BANKED                            00000001
+BAUDCON                           00000FB8
+BAUDCTL                           00000FB8
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BSR                               00000FE0
+BTOEE                             00000004
+BTOEF                             00000004
+BTSEE                             00000007
+BTSEF                             00000007
+Button0                           0000020C
+Button1                           0000022A
+Button2                           00000248
+Button3                           00000266
+Button4                           00000284
+Button5                           000002A2
+Button6                           000002C0
+Button7                           000002DE
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1                              00000002
+CCP1AS                            00000FB6
+CCP1CON                           00000FBD
+CCP1DEL                           00000FB7
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP2CON                           00000FBA
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000FBB
+CCPR2H                            00000FBC
+CCPR2L                            00000FBB
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CIS                               00000003
+CK                                00000006
+CK1SPP                            00000000
+CK2SPP                            00000001
+CKE                               00000006
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CKP                               00000004
+CLK1EN                            00000004
+CLKCFG0                           00000006
+CLKCFG1                           00000007
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000FB4
+CMIE                              00000006
+CMIF                              00000006
+CMIP                              00000006
+CRC16EE                           00000002
+CRC16EF                           00000002
+CRC5EE                            00000001
+CRC5EF                            00000001
+CREN                              00000004
+CSEN                              00000005
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            00000FB5
+CVREF                             00000004
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+CVRSS                             00000004
+ConvertToBCD                      000000E2
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+DFN8EE                            00000003
+DFN8EF                            00000003
+DIR                               00000002
+DONE                              00000001
+D_A                               00000005
+D_NOT_A                           00000005
+DisplayDelay                      000001BC
+DisplayFrequency                  0000018A
+Done                              000000AE
+ECCP1AS                           00000FB6
+ECCP1CON                          00000FBD
+ECCP1DEL                          00000FB7
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 16
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             00000FA9
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+ENDP0                             00000003
+ENDP1                             00000004
+ENDP2                             00000005
+ENDP3                             00000006
+EPCONDIS                          00000003
+EPHSHK                            00000004
+EPINEN                            00000001
+EPOUTEN                           00000002
+EPSTALL                           00000000
+ExtractDigits                     000000B0
+FAST                              00000001
+FERR                              00000002
+FLTS                              00000002
+FREE                              00000004
+FREQUENCY_DISPLAY_0               00000025
+FREQUENCY_DISPLAY_1               00000026
+FREQUENCY_DISPLAY_2               00000027
+FREQUENCY_DISPLAY_3               00000028
+FREQUENCY_POTENTIOMETER           00000019
+FREQUENCY_POTENTIOMETER_0         00000020
+FREQUENCY_POTENTIOMETER_1         00000021
+FREQUENCY_POTENTIOMETER_2         00000022
+FREQUENCY_POTENTIOMETER_3         00000023
+FREQUENCY_TEMPORARY               00000024
+FREQ_MAX                          00001000
+FREQ_MIN                          00000010
+FREQ_SYS                          08000000
+FRM0                              00000000
+FRM1                              00000001
+FRM10                             00000002
+FRM2                              00000002
+FRM3                              00000003
+FRM4                              00000004
+FRM5                              00000005
+FRM6                              00000006
+FRM7                              00000007
+FRM8                              00000000
+FRM9                              00000001
+FSEN                              00000002
+FSR0                              00000000
+FSR0H                             00000FEA
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+FrequencyInRange                  0000009C
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GIE_GIEH                          00000007
+GO                                00000001
+GO_DONE                           00000001
+GO_NOT_DONE                       00000001
+HLVDCON                           00000FD2
+HLVDEN                            00000004
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIN                            00000005
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+I2C_DAT                           00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IDLEIE                            00000004
+IDLEIF                            00000004
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INIT                              0000000C
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+INTEDG1                           00000005
+INTEDG2                           00000004
+INTSRC                            00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRVST                             00000005
+IVRST                             00000005
+InterruptsInit                    00000052
+LATA                              00000F89
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATB                              00000F8A
+LATB0                             00000000
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 19
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LATE0                             00000000
+LATE1                             00000001
+LATE2                             00000002
+LVDCON                            00000FD2
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+LimitFrequency                    0000008C
+MAIN_LOOP                         00000020
+N                                 00000004
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_IPEN                          00000007
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RI                            00000004
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OERR                              00000001
+OESPP                             00000002
+OSC2                              00000006
+OSCCON                            00000FD3
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSTS                              00000003
+OV                                00000003
+P                                 00000004
+P1A                               00000002
+P1M0                              00000006
+P1M1                              00000007
+PC                                00000FF9
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 20
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+PEIE                              00000006
+PEIE_GIEL                         00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PGM                               00000005
+PIDEE                             00000000
+PIDEF                             00000000
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIR1                              00000F9E
+PIR2                              00000FA1
+PKTDIS                            00000004
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+POR                               00000001
+PORTA                             00000F80
+PORTB                             00000F81
+PORTC                             00000F82
+PORTD                             00000F83
+PORTE                             00000F84
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PPB0                              00000000
+PPB1                              00000001
+PPBI                              00000001
+PPBRST                            00000006
+PR2                               00000FCB
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+PRSEN                             00000007
+PSA                               00000003
+PSSAC0                            00000002
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 21
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PWMInit                           0000005A
+PortsInit                         00000038
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCMT                              00000006
+RCON                              00000FD0
+RCREG                             00000FAE
+RCSTA                             00000FAB
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000007
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RDPU                              00000007
+RDSPP                             00000007
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 22
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+READ_WRITE                        00000002
+RESUME                            00000002
+RI                                00000004
+RSEN                              00000001
+RX                                00000007
+RX9                               00000006
+RX9D                              00000000
+RXDTP                             00000005
+R_NOT_W                           00000002
+R_W                               00000002
+ReadButtons                       000001C4
+ReadPotentiometer                 00000082
+S                                 00000003
+SBOREN                            00000006
+SCKP                              00000004
+SCS0                              00000000
+SCS1                              00000001
+SE0                               00000005
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SOFIE                             00000006
+SOFIF                             00000006
+SPBRG                             00000FAF
+SPBRGH                            00000FB0
+SPEN                              00000007
+SPP0                              00000000
+SPP1                              00000001
+SPP2                              00000002
+SPP3                              00000003
+SPP4                              00000004
+SPP5                              00000005
+SPP6                              00000006
+SPP7                              00000007
+SPPBUSY                           00000004
+SPPCFG                            00000F63
+SPPCON                            00000F65
+SPPDATA                           00000F62
+SPPEN                             00000000
+SPPEPS                            00000F64
+SPPIE                             00000007
+SPPIF                             00000007
+SPPIP                             00000007
+SPPOWN                            00000001
+SREN                              00000005
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 23
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STALLIE                           00000005
+STALLIF                           00000005
+STATUS                            00000FD8
+STKFUL                            00000007
+STKOVF                            00000007
+STKPTR                            00000FFC
+STKPTR0                           00000000
+STKPTR1                           00000001
+STKPTR2                           00000002
+STKPTR3                           00000003
+STKPTR4                           00000004
+STKUNF                            00000006
+SUSPND                            00000001
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0IP                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+T0SE                              00000004
+T13CKI                            00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RUN                             00000006
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FCA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 24
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T3CCP1                            00000003
+T3CCP2                            00000006
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+T3CON                             00000FB1
+T3NSYNC                           00000002
+T3SYNC                            00000002
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TMR0                              00000FD6
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+TMR0ON                            00000007
+TMR1                              00000FCE
+TMR1CS                            00000001
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1ON                            00000000
+TMR2                              00000FCC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+TMR2ON                            00000002
+TMR3                              00000FB2
+TMR3CS                            00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3ON                            00000000
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 25
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TRNIE                             00000003
+TRNIF                             00000003
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX                                00000006
+TX9                               00000006
+TX9D                              00000000
+TXCKP                             00000004
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXSTA                             00000FAC
+TurnOffLEDS                       000001FA
+UA                                00000001
+UADDR                             00000F6E
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 26
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+UCFG                              00000F6F
+UCON                              00000F6D
+UEIE                              00000F6B
+UEIR                              00000F6A
+UEP0                              00000F70
+UEP1                              00000F71
+UEP10                             00000F7A
+UEP11                             00000F7B
+UEP12                             00000F7C
+UEP13                             00000F7D
+UEP14                             00000F7E
+UEP15                             00000F7F
+UEP2                              00000F72
+UEP3                              00000F73
+UEP4                              00000F74
+UEP5                              00000F75
+UEP6                              00000F76
+UEP7                              00000F77
+UEP8                              00000F78
+UEP9                              00000F79
+UERRIE                            00000001
+UERRIF                            00000001
+UFRM                              00000F66
+UFRMH                             00000F67
+UFRML                             00000F66
+UIE                               00000F69
+UIR                               00000F68
+UOEMON                            00000006
+UPUEN                             00000004
+URSTIE                            00000000
+URSTIF                            00000000
+USBEN                             00000003
+USBIE                             00000005
+USBIF                             00000005
+USBIP                             00000005
+USTAT                             00000F6C
+UTEYE                             00000007
+UTRDIS                            00000003
+UpdatePWM                         000002FC
+UpdatePWMFrequency                00000302
+VCFG0                             00000004
+VCFG1                             00000005
+VDIRMAG                           00000007
+VREFM                             00000002
+VREFP                             00000003
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000FD1
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+WRSPP                             00000006
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 27
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+WS0                               00000000
+WS1                               00000001
+WS2                               00000002
+WS3                               00000003
+WUE                               00000001
+WaitLoop                          00000084
+Z                                 00000002
+_BORV_0_2L                        000000E7
+_BORV_1_2L                        000000EF
+_BORV_2_2L                        000000F7
+_BORV_3_2L                        000000FF
+_BOR_OFF_2L                       000000F9
+_BOR_ON_2L                        000000FF
+_BOR_ON_ACTIVE_2L                 000000FD
+_BOR_SOFT_2L                      000000FB
+_CCP2MX_OFF_3H                    000000FE
+_CCP2MX_ON_3H                     000000FF
+_CONFIG1H                         00300001
+_CONFIG1L                         00300000
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+_CP3_OFF_5L                       000000FF
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_CPUDIV_OSC1_PLL2_1L              000000E7
+_CPUDIV_OSC2_PLL3_1L              000000EF
+_CPUDIV_OSC3_PLL4_1L              000000F7
+_CPUDIV_OSC4_PLL6_1L              000000FF
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 28
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_FOSC_ECIO_EC_1H                  000000F4
+_FOSC_ECPLLIO_EC_1H               000000F6
+_FOSC_ECPLL_EC_1H                 000000F7
+_FOSC_EC_EC_1H                    000000F5
+_FOSC_HSPLL_HS_1H                 000000FE
+_FOSC_HS_1H                       000000FC
+_FOSC_INTOSCIO_EC_1H              000000F8
+_FOSC_INTOSC_EC_1H                000000F9
+_FOSC_INTOSC_HS_1H                000000FB
+_FOSC_INTOSC_XT_1H                000000FA
+_FOSC_XTPLL_XT_1H                 000000F2
+_FOSC_XT_XT_1H                    000000F0
+_ICPRT_OFF_4L                     000000DF
+_ICPRT_ON_4L                      000000FF
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_LPT1OSC_OFF_3H                   000000FB
+_LPT1OSC_ON_3H                    000000FF
+_LVP_OFF_4L                       000000FB
+_LVP_ON_4L                        000000FF
+_MCLRE_OFF_3H                     0000007F
+_MCLRE_ON_3H                      000000FF
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PLLDIV_10_1L                     000000FE
+_PLLDIV_12_1L                     000000FF
+_PLLDIV_1_1L                      000000F8
+_PLLDIV_2_1L                      000000F9
+_PLLDIV_3_1L                      000000FA
+_PLLDIV_4_1L                      000000FB
+_PLLDIV_5_1L                      000000FC
+_PLLDIV_6_1L                      000000FD
+_PWRT_OFF_2L                      000000FF
+_PWRT_ON_2L                       000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_USBDIV_1_1L                      000000DF
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 29
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_USBDIV_2_1L                      000000FF
+_VREGEN_OFF_2L                    000000DF
+_VREGEN_ON_2L                     000000FF
+_WDTPS_1024_2H                    000000F5
+_WDTPS_128_2H                     000000EF
+_WDTPS_16384_2H                   000000FD
+_WDTPS_16_2H                      000000E9
+_WDTPS_1_2H                       000000E1
+_WDTPS_2048_2H                    000000F7
+_WDTPS_256_2H                     000000F1
+_WDTPS_2_2H                       000000E3
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000EB
+_WDTPS_4096_2H                    000000F9
+_WDTPS_4_2H                       000000E5
+_WDTPS_512_2H                     000000F3
+_WDTPS_64_2H                      000000ED
+_WDTPS_8192_2H                    000000FB
+_WDTPS_8_2H                       000000E7
+_WDT_OFF_2H                       000000FE
+_WDT_ON_2H                        000000FF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F4550                         00000001
+count1                            000000FF
+decode_digit                      0000010C
+dig_end                           000000DE
+dig_loop                          000000C2
+dis_error                         0000016E
+dis_is_0                          00000172
+dis_is_1                          00000174
+dis_is_2                          00000176
+dis_is_3                          00000178
+dis_is_4                          0000017A
+dis_is_5                          0000017C
+dis_is_6                          0000017E
+dis_is_7                          00000180
+dis_is_8                          00000182
+dis_is_9                          00000184
+MPASM 5.87  RECTANGULARWAVEGENERATORMODE.ASM   11-11-2023  15:57:39         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+dis_is_error                      00000186
+dis_mark1                         0000011E
+dis_mark2                         00000128
+dis_mark3                         00000132
+dis_mark4                         0000013C
+dis_mark5                         00000146
+dis_mark6                         00000150
+dis_mark7                         0000015A
+dis_mark8                         00000164
+duty_cycle                        00000029
+led0_state                        00000030
+led1_state                        00000031
+led2_state                        00000032
+led3_state                        00000033
+led4_state                        00000034
+led5_state                        00000035
+led6_state                        00000036
+led7_state                        00000037
+
+Errors   :     0
+Warnings :    58 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+

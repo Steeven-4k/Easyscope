@@ -1,0 +1,142 @@
+MPLINK 5.09, LINKER
+Linker Map File - Created Sat Nov 11 15:57:42 2023
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000004
+                   .cinit    romdata   0x000004    program   0x000002
+                   .org_1       code   0x000008    program   0x000308
+.config_300000_BUILD/DEFAULT/PRODUCTION/RECTANG    romdata   0x300000    program   0x000001
+.config_300001_BUILD/DEFAULT/PRODUCTION/RECTANG    romdata   0x300001    program   0x000001
+.config_300003_BUILD/DEFAULT/PRODUCTION/RECTANG    romdata   0x300003    program   0x000001
+.config_300005_BUILD/DEFAULT/PRODUCTION/RECTANG    romdata   0x300005    program   0x000001
+.config_300006_BUILD/DEFAULT/PRODUCTION/RECTANG    romdata   0x300006    program   0x000001
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000005      
+                            0x000008    0x00030f      
+                            0x300000    0x300001      
+                            0x300003    0x300003      
+                            0x300005    0x300006      
+            787 out of 33048 program addresses used, program memory utilization is 2%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+             ADCInterrupt   0x000072    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                   ADInit   0x000046    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button0   0x00020c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button1   0x00022a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button2   0x000248    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button3   0x000266    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button4   0x000284    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button5   0x0002a2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button6   0x0002c0    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button7   0x0002de    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             ConvertToBCD   0x0000e2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             DisplayDelay   0x0001bc    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+         DisplayFrequency   0x00018a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                     Done   0x0000ae    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+            ExtractDigits   0x0000b0    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+         FrequencyInRange   0x00009c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                     INIT   0x00000c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+           InterruptsInit   0x000052    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+           LimitFrequency   0x00008c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                MAIN_LOOP   0x000020    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  PWMInit   0x00005a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                PortsInit   0x000038    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+              ReadButtons   0x0001c4    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+        ReadPotentiometer   0x000082    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+              TurnOffLEDS   0x0001fa    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                UpdatePWM   0x0002fc    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+       UpdatePWMFrequency   0x000302    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 WaitLoop   0x000084    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             decode_digit   0x00010c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  dig_end   0x0000de    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dig_loop   0x0000c2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_error   0x00016e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_0   0x000172    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_1   0x000174    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_2   0x000176    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_3   0x000178    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_4   0x00017a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_5   0x00017c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_6   0x00017e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_7   0x000180    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_8   0x000182    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_9   0x000184    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             dis_is_error   0x000186    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark1   0x00011e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark2   0x000128    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark3   0x000132    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark4   0x00013c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark5   0x000146    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark6   0x000150    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark7   0x00015a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark8   0x000164    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                     INIT   0x00000c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                MAIN_LOOP   0x000020    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                PortsInit   0x000038    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                   ADInit   0x000046    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+           InterruptsInit   0x000052    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  PWMInit   0x00005a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             ADCInterrupt   0x000072    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+        ReadPotentiometer   0x000082    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 WaitLoop   0x000084    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+           LimitFrequency   0x00008c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+         FrequencyInRange   0x00009c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                     Done   0x0000ae    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+            ExtractDigits   0x0000b0    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dig_loop   0x0000c2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  dig_end   0x0000de    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             ConvertToBCD   0x0000e2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             decode_digit   0x00010c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark1   0x00011e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark2   0x000128    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark3   0x000132    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark4   0x00013c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark5   0x000146    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark6   0x000150    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark7   0x00015a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_mark8   0x000164    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                dis_error   0x00016e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_0   0x000172    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_1   0x000174    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_2   0x000176    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_3   0x000178    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_4   0x00017a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_5   0x00017c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_6   0x00017e    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_7   0x000180    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_8   0x000182    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                 dis_is_9   0x000184    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             dis_is_error   0x000186    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+         DisplayFrequency   0x00018a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+             DisplayDelay   0x0001bc    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+              ReadButtons   0x0001c4    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+              TurnOffLEDS   0x0001fa    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button0   0x00020c    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button1   0x00022a    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button2   0x000248    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button3   0x000266    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button4   0x000284    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button5   0x0002a2    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button6   0x0002c0    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                  Button7   0x0002de    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+                UpdatePWM   0x0002fc    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+       UpdatePWMFrequency   0x000302    program     static C:\Users\steev\Documents\Ecole\ECE\ING4\Microcontroleurs\Projet\RectangularWaveGeneratorMode.X\RectangularWaveGeneratorMode.asm
+
+
