@@ -1,0 +1,50 @@
+#include <p18F4550.inc>
+
+; Configuration pour mikroProg
+CONFIG WDT=OFF 
+CONFIG MCLRE = ON
+CONFIG DEBUG = OFF
+CONFIG FOSC = HS
+
+org 0x0000
+goto prog_init
+
+org 0x0018
+goto irq_handle
+
+irq_handle
+    btfsc PIR1, ADIF      ; Vérifie si le drapeau ADIF est positionné
+    goto AD_interrupt     ; S'il l'est, on passe dans AD_interrupt
+    retfie                ; Sinon, retourne de l'interruption
+
+AD_interrupt
+    bcf PIR1, ADIF        ; Efface le drapeau ADIF
+    movf ADRESH, W        ; Déplace le contenu de ADRESH vers le registre W
+    movwf PORTD           ; Déplace le contenu du registre W vers PORTD
+    retfie                ; Retourne de l'interruption
+
+prog_init
+    
+    ; Configuration du module de conversion A/N
+    movlw B'00000000'     ; Charge le registre W avec le binaire 00000000 
+			  ; on configure le PORTB en AAAAAAAAAAAA 
+			  ; pour que RB0 soit en analogique
+    movwf ADCON1          ; Déplace le registre W vers ADCON1
+
+    movlw B'00110000'     ; Charge le registre W avec le binaire 00110000
+			  ; on selection le canal 12 --> AN12
+    movwf ADCON0          ; Déplace le registre W vers ADCON0
+
+    bsf ADCON0, ADON      ; Positionne le bit ADON dans ADCON0 pour activer le convertisseur ADC
+
+    clrf TRISD            ; Initialise le registre TRISD pour définir PORTD comme sortie
+    clrf PORTD            ; Initialise le registre PORTD
+
+    bsf INTCON, GIE       ; Positionne le bit GIE dans INTCON pour activer les interruptions globales
+    bsf PIE1, ADIE        ; Positionne le bit ADIE dans PIE1 pour activer l'interruption ADC
+    bsf INTCON, PEIE      ; Positionne le bit PEIE dans INTCON pour activer les interruptions périphériques
+
+start_AD
+    bsf ADCON0, GO_DONE   ; Positionne le bit GO_DONE dans ADCON0 pour démarrer la conversion ADC
+    goto start_AD         ; Boucle infinie pour démarrer continuellement la conversion ADC
+end
